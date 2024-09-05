@@ -1,2 +1,2 @@
-# EPD-ASQ
-Endpoint Detection with Amplitude Signal Quantization
+# VAD-ASQ
+Voice Activity Detection with Amplitude Signal Quantization
