@@ -6,6 +6,7 @@ import os
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
 
+
 class AudioVisualizer:
     def __init__(self, audio_files):
         self.audio_files = audio_files
@@ -15,22 +16,16 @@ class AudioVisualizer:
         self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(15, 10))
         
         # Speech detection parameters
-        self.min_speech_duration_ms = 300
+        self.min_speech_duration_ms = 100
         self.min_silence_duration_ms = 100
-        self.speech_pad_ms = 30
+        self.speech_pad_ms = 0 #self.min_silence_duration_ms / 2.05
         
         self.update_plot()
 
     def load_audio(self):
         self.current_file = self.audio_files[self.current_file_index]
-        try:
-            self.audio, self.fs = sf.read(self.current_file)
-            self.max_value = np.max(np.abs(self.audio))
-        except Exception as e:
-            print(f"Error loading file {self.current_file}: {str(e)}")
-            self.audio = np.zeros(1000)  # 빈 오디오로 대체
-            self.fs = 44100  # 기본 샘플링 레이트
-            self.max_value = 1.0
+        self.audio, self.fs = sf.read(self.current_file)
+        self.max_value = np.max(np.abs(self.audio))
 
     def detect_speech_silence(self, quantized_audio):
         is_speech = np.abs(quantized_audio) > 0
@@ -135,6 +130,10 @@ class AudioVisualizer:
         for start, end in speech_regions:
             self.ax1.axvspan(start/self.fs, end/self.fs, color='green', alpha=0.2)
 
+        # # 무음 구간 표시
+        # for start, end in silence_regions:
+        #     self.ax1.axvspan(start/self.fs, end/self.fs, color='red', alpha=0.2)
+
         # Quantized Waveform
         self.ax2.plot(t, self.audio_quantized)
         self.ax2.set_title(f'양자화된 파형\n레벨: 2^{self.exponent:.1f}')
@@ -162,23 +161,9 @@ class AudioVisualizer:
             self.load_audio()
             self.update_plot()
 
-def find_audio_files(directory):
-    supported_extensions = ('.wav', '.flac', '.ogg', '.aiff', '.aif', '.aifc', '.mp3')
-    audio_files = []
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.lower().endswith(supported_extensions):
-                audio_files.append(os.path.join(root, file))
-    return audio_files
-
 if __name__ == '__main__':
-    audio_dir = 'libri'
-    audio_files = find_audio_files(audio_dir)
-    
-    if not audio_files:
-        print("지원되는 오디오 파일을 찾을 수 없습니다.")
-    else:
-        print(f"총 {len(audio_files)}개의 오디오 파일을 찾았습니다.")
-        visualizer = AudioVisualizer(audio_files)
-        visualizer.fig.canvas.mpl_connect('key_press_event', visualizer.on_key)
-        plt.show()
+    audio_dir = 'raw'
+    audio_files = [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.endswith('.wav')]
+    visualizer = AudioVisualizer(audio_files)
+    visualizer.fig.canvas.mpl_connect('key_press_event', visualizer.on_key)
+    plt.show()
